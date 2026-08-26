@@ -1,0 +1,151 @@
+-- HUNGCUTE HITBOX
+-- Dùng trong game Roblox của bạn
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local KEY = "hungcute"
+local DEFAULT_SIZE = 10
+local MIN_SIZE = 2
+local MAX_SIZE = 100
+
+local data = {}
+
+local function makeHitbox(player, size)
+	local character = player.Character
+	if not character then return end
+
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	if data[player] and data[player].Hitbox then
+		data[player].Hitbox:Destroy()
+	end
+
+	local box = Instance.new("Part")
+	box.Name = "HungCuteHitbox"
+	box.Size = Vector3.new(size, size, size)
+	box.Transparency = 1
+	box.CanCollide = false
+	box.CanTouch = true
+	box.CanQuery = true
+	box.Massless = true
+	box.Anchored = false
+	box.Parent = character
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = box
+	weld.Parent = box
+
+	local outline = Instance.new("SelectionBox")
+	outline.Name = "RainbowOutline"
+	outline.Adornee = box
+	outline.LineThickness = 0.04
+	outline.SurfaceTransparency = 1
+	outline.Parent = box
+
+	data[player] = data[player] or {}
+	data[player].Hitbox = box
+	data[player].Outline = outline
+	data[player].Size = size
+end
+
+-- Viền đổi 7 màu liên tục
+RunService.Heartbeat:Connect(function()
+	local t = os.clock()
+
+	for player, info in pairs(data) do
+		if info.Outline and info.Outline.Parent then
+			info.Outline.Color3 = Color3.fromHSV((t * 0.25) % 1, 1, 1)
+		end
+	end
+end)
+
+local function removeHitbox(player)
+	if data[player] and data[player].Hitbox then
+		data[player].Hitbox:Destroy()
+	end
+
+	data[player] = nil
+end
+
+-- Tạo RemoteEvent tự động
+local remote = Instance.new("RemoteEvent")
+remote.Name = "HungCuteHitbox"
+remote.Parent = game:GetService("ReplicatedStorage")
+
+remote.OnServerEvent:Connect(function(player, action, value)
+	if action == "Open" then
+		if value ~= KEY then
+			return
+		end
+
+		data[player] = data[player] or {}
+		data[player].Enabled = true
+
+		makeHitbox(player, DEFAULT_SIZE)
+
+	elseif action == "Size" then
+		if not data[player] or not data[player].Enabled then
+			return
+		end
+
+		local size = tonumber(value)
+		if not size then return end
+
+		size = math.clamp(size, MIN_SIZE, MAX_SIZE)
+		makeHitbox(player, size)
+
+	elseif action == "Close" then
+		removeHitbox(player)
+	end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(1)
+
+		if data[player] and data[player].Enabled then
+			makeHitbox(player, data[player].Size or DEFAULT_SIZE)
+		end
+	end)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	removeHitbox(player)
+end)
+
+-- Hệ thống sát thương:
+-- Tool của game bạn chạm vào hitbox thì mục tiêu chết.
+local function setupTool(tool)
+	if not tool:IsA("Tool") then return end
+
+	local handle = tool:FindFirstChild("Handle")
+	if not handle then return end
+
+	handle.Touched:Connect(function(part)
+		local targetCharacter = part:FindFirstAncestorOfClass("Model")
+		if not targetCharacter then return end
+
+		local humanoid = targetCharacter:FindFirstChildOfClass("Humanoid")
+		if not humanoid then return end
+
+		if not targetCharacter:FindFirstChild("HungCuteHitbox") then
+			return
+		end
+
+		local attacker = tool.Parent
+		if targetCharacter == attacker then
+			return
+		end
+
+		humanoid.Health = 0
+	end)
+end
+
+for _, object in ipairs(game:GetDescendants()) do
+	setupTool(object)
+end
+
+game.DescendantAdded:Connect(setupTool)
