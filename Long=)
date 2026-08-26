@@ -1,0 +1,99 @@
+-- BananaHitboxServer
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local remote = Instance.new("RemoteEvent")
+remote.Name = "BananaHitboxRemote"
+remote.Parent = ReplicatedStorage
+
+local hitboxSize = 10
+local enabled = true
+
+local function createHitbox(character)
+	local old = character:FindFirstChild("BananaHitbox")
+	if old then
+		old:Destroy()
+	end
+
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	local hitbox = Instance.new("Part")
+	hitbox.Name = "BananaHitbox"
+	hitbox.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+	hitbox.Transparency = 1
+	hitbox.CanCollide = false
+	hitbox.CanTouch = true
+	hitbox.CanQuery = true
+	hitbox.Massless = true
+	hitbox.CFrame = root.CFrame
+	hitbox.Parent = character
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = hitbox
+	weld.Parent = hitbox
+
+	-- Viền hitbox
+	local selection = Instance.new("SelectionBox")
+	selection.Name = "RainbowOutline"
+	selection.Adornee = hitbox
+	selection.LineThickness = 0.05
+	selection.SurfaceTransparency = 1
+	selection.Parent = hitbox
+
+	task.spawn(function()
+		while hitbox.Parent do
+			for hue = 0, 1, 0.02 do
+				if not hitbox.Parent then break end
+				selection.Color3 = Color3.fromHSV(hue, 1, 1)
+				task.wait(0.03)
+			end
+		end
+	end)
+end
+
+local function updatePlayer(player)
+	if not enabled then return end
+
+	if player.Character then
+		createHitbox(player.Character)
+	end
+end
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(1)
+		updatePlayer(player)
+	end)
+end)
+
+remote.OnServerEvent:Connect(function(player, action, value)
+	if action == "Toggle" then
+		enabled = value == true
+
+		for _, p in Players:GetPlayers() do
+			if enabled then
+				updatePlayer(p)
+			elseif p.Character then
+				local hb = p.Character:FindFirstChild("BananaHitbox")
+				if hb then
+					hb:Destroy()
+				end
+			end
+		end
+
+	elseif action == "Size" then
+		value = math.clamp(tonumber(value) or 10, 4, 30)
+		hitboxSize = value
+
+		for _, p in Players:GetPlayers() do
+			if p.Character then
+				local hb = p.Character:FindFirstChild("BananaHitbox")
+				if hb then
+					hb.Size = Vector3.new(value, value, value)
+				end
+			end
+		end
+	end
+end)
