@@ -1,0 +1,152 @@
+--// ANIME RAINBOW HITBOX - Roblox Studio
+--// Dùng cho NPC/TrainingTarget trong game của bạn
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "AnimeRainbowHitbox"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+--// Main
+local main = Instance.new("Frame")
+main.Size = UDim2.fromOffset(330, 390)
+main.Position = UDim2.new(0.5, -165, 0.5, -195)
+main.BackgroundColor3 = Color3.fromRGB(14, 17, 28)
+main.BorderSizePixel = 0
+main.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 14)
+corner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(70, 255, 150)
+stroke.Thickness = 1.5
+stroke.Parent = main
+
+--// Header
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -55, 0, 60)
+title.Position = UDim2.fromOffset(15, 0)
+title.BackgroundTransparency = 1
+title.Text = "🌸  ANIME HITBOX"
+title.TextColor3 = Color3.fromRGB(90, 255, 170)
+title.TextSize = 21
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = main
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(40, 40)
+close.Position = UDim2.new(1, -48, 0, 10)
+close.BackgroundTransparency = 1
+close.Text = "×"
+close.TextColor3 = Color3.new(1,1,1)
+close.TextSize = 28
+close.Parent = main
+
+--// Avatar anime
+local avatar = Instance.new("TextLabel")
+avatar.Size = UDim2.fromOffset(90, 90)
+avatar.Position = UDim2.fromOffset(120, 65)
+avatar.BackgroundColor3 = Color3.fromRGB(25, 29, 45)
+avatar.Text = "🌸\n👩🏻‍🎤"
+avatar.TextSize = 32
+avatar.Font = Enum.Font.GothamBold
+avatar.Parent = main
+
+local avatarCorner = Instance.new("UICorner")
+avatarCorner.CornerRadius = UDim.new(1, 0)
+avatarCorner.Parent = avatar
+
+--// Toggle
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(1, -40, 0, 50)
+toggle.Position = UDim2.fromOffset(20, 170)
+toggle.BackgroundColor3 = Color3.fromRGB(27, 34, 52)
+toggle.Text = "HITBOX : OFF"
+toggle.TextColor3 = Color3.new(1,1,1)
+toggle.TextSize = 17
+toggle.Font = Enum.Font.GothamBold
+toggle.Parent = main
+
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 10)
+
+--// Size label
+local sizeLabel = Instance.new("TextLabel")
+sizeLabel.Size = UDim2.new(1, -40, 0, 30)
+sizeLabel.Position = UDim2.fromOffset(20, 235)
+sizeLabel.BackgroundTransparency = 1
+sizeLabel.Text = "Kích thước: 10"
+sizeLabel.TextColor3 = Color3.fromRGB(220,220,220)
+sizeLabel.TextSize = 16
+sizeLabel.Font = Enum.Font.Gotham
+sizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+sizeLabel.Parent = main
+
+--// Slider
+local slider = Instance.new("TextButton")
+slider.Size = UDim2.new(1, -40, 0, 35)
+slider.Position = UDim2.fromOffset(20, 270)
+slider.BackgroundColor3 = Color3.fromRGB(35, 40, 58)
+slider.Text = ""
+slider.Parent = main
+
+Instance.new("UICorner", slider).CornerRadius = UDim.new(1,0)
+
+local knob = Instance.new("Frame")
+knob.Size = UDim2.fromOffset(18,18)
+knob.Position = UDim2.new(0.25,-9,0.5,-9)
+knob.BackgroundColor3 = Color3.fromRGB(90,255,170)
+knob.Parent = slider
+
+Instance.new("UICorner", knob).CornerRadius = UDim.new(1,0)
+
+local hitboxOn = false
+local hitboxSize = 10
+local boxes = {}
+
+--// Tìm NPC/TrainingTarget
+local function createBox(model)
+	if model:IsA("Model") and model.Name == "TrainingTarget" then
+		local root = model:FindFirstChild("HumanoidRootPart")
+		if root and not boxes[model] then
+			local box = Instance.new("BoxHandleAdornment")
+			box.Name = "AnimeRainbowHitbox"
+			box.Adornee = root
+			box.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+			box.Transparency = 1
+			box.AlwaysOnTop = true
+			box.ZIndex = 10
+			box.Parent = root
+
+			boxes[model] = box
+		end
+	end
+end
+
+local function removeBoxes()
+	for model, box in pairs(boxes) do
+		if box then box:Destroy() end
+		boxes[model] = nil
+	end
+end
+
+--// Toggle
+toggle.MouseButton1Click:Connect(function()
+	hitboxOn = not hitboxOn
+	toggle.Text = hitboxOn and "HITBOX : ON" or "HITBOX : OFF"
+
+	if not hitboxOn then
+		removeBoxes()
+	else
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			createBox(obj)
+		end
+	end
+end)
+
+--//
